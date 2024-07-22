@@ -101,18 +101,23 @@ def validate(loader, model, loss_fn, device="cuda"):
     with torch.no_grad():
         batch_length = len(loader)
 
-
         for batch_idx, (data, labels) in enumerate(loop):
             data = data.to(device)
             labels = labels.float().unsqueeze(1).to(device) # Get rid of float, unsqueeze if not using BCE.
 
             predictions = model(data)
             loss = loss_fn(predictions, labels)
+
             total_loss += loss
 
             # Pass through sigmoid function
             probs = torch.sigmoid(predictions)
             preds = (probs > 0.5).float()
+
+            #print(preds.cpu().numpy())
+            #print(labels.cpu().numpy())
+            #input('pause')
+            
 
             correct = (preds == labels).sum().item()
             accuracy = (correct / len(labels))
@@ -130,23 +135,40 @@ def validate(loader, model, loss_fn, device="cuda"):
 
 def predict(loader, model, device="cuda"):
     preds_arr = []
+    probs_arr = []
     labels_arr = []
-    torch.cuda.empty_cache()
-    model.eval()
-    with torch.no_grad():
-        for images, labels in loader:
-            images = images.to(device)
-            #labels = labels.to(device)
+    total_acc = 0
 
-            outputs = model(images)
-            _, predicted_class = torch.max(outputs, 1)
-            preds_arr.append(predicted_class.cpu().numpy())
-            labels_arr.append(labels)
+    loop = tqdm.tqdm(loader)
+    model.eval()
+
+    with torch.no_grad():
+        batch_length = len(loader)
+        for batch_idx, (data, labels) in enumerate(loop):
+            data = data.to(device)
+            labels = labels.float().unsqueeze(1).to(device)
+
+            predictions = model(data)
+
+            probs = torch.sigmoid(predictions)
+            preds = (probs > 0.5).float()
+
+            correct = (preds == labels).sum().item()
+            accuracy = (correct / len(labels))
+            #print(accuracy)
+            total_acc += accuracy
+
+            probs_arr.append(probs.cpu().numpy())
+            preds_arr.append(preds.cpu().numpy())
+            labels_arr.append(labels.cpu().numpy())
+
+    avg_acc = total_acc / batch_length
+    print(avg_acc)
 
             #print(f"Labels: {labels}")
             #print(f"Preds: {predicted_class}")
     preds_arr = np.concatenate(preds_arr)
     labels_arr = np.concatenate(labels_arr)
-    #print(preds_arr)
-    #print(len(preds_arr))
-    return preds_arr, labels_arr
+    probs_arr = np.concatenate(probs_arr)
+
+    return preds_arr, labels_arr, probs_arr

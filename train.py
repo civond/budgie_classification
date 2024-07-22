@@ -4,6 +4,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 from torchvision.transforms import v2
+import torchvision.models as models
 import pandas as pd
 from datetime import datetime
 import pandas as pd
@@ -26,7 +27,10 @@ dataset_pth = "data/meta.csv"
 def main():
     # Load the model for binary classiication
     num_classes = 1
-    model = ResNet152(img_channel=3, num_classes=num_classes) 
+    #model = ResNet152(img_channel=3, num_classes=num_classes) 
+
+    model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
+    model.classifier[1] = nn.Linear(1280, num_classes)
     model = model.to(DEVICE)
 
     # If not doing binary classification, use cross entropy loss
@@ -80,10 +84,11 @@ def main():
             NUM_WORKERS, train, shuffle, PIN_MEMORY
         )
     
+    
     # If load checkpoint == True
     if LOAD_MODEL: 
         print("Loading model.")
-        load_checkpoint(torch.load("checkpoints/2024_07_03_16_25_45.pth.tar"), model)
+        load_checkpoint(torch.load("checkpoints/2024_07_22_06_21_51.pth.tar"), model)
 
     ### Train ###
     if TRAIN == True:
@@ -104,12 +109,13 @@ def main():
                 valid_loader, model,
                 loss_fn, device=DEVICE
                 )
-
+            
             # Append metrics
             train_acc_running.append(train_acc)
             train_loss_running.append(train_loss)
             val_acc_running.append(val_acc)
             val_loss_running.append(val_loss)
+
 
         # Get current timestamp
         now = datetime.now()
@@ -122,58 +128,6 @@ def main():
         }
         save_checkpoint(state = checkpoint, filename= f"checkpoints/{timestamp}.pth.tar")
         save_metrics(timestamp, train_loss_running, train_acc_running, val_loss_running, val_acc_running)
-
-    ### Predictions ###
-    if TRAIN == False and LOAD_MODEL == True:
-        # Get the time
-        now = datetime.now()
-        timestamp = now.strftime("%Y_%m_%d_%H_%M_%S")
-        temp_preds_path = f"csv/preds_{timestamp}.csv"
-        df_list = []
-
-        # Chunk the testing set
-        i = 0
-        chunk_size = 10_000  # Adjust based on memory capacity
-        print(f"Chunk Size: {chunk_size}")
-
-        for chunk in pd.read_csv("meta_twobird.csv", chunksize=chunk_size):
-            print(f"Loading Chunk {i}")
-            print(f"Len: {len(chunk)}")
-            #print(chunk)
-
-            chunk = chunk.reset_index(drop=True)
-
-            # Predict
-            train = False
-            shuffle=False
-            test_loader = get_loader(
-                    chunk,
-                    BATCH_SIZE,
-                    test_transform,
-                    NUM_WORKERS,
-                    train,
-                    shuffle,
-                    PIN_MEMORY
-                )
-            
-            print(f"Generating predictions for chunk {i}")
-            preds, labels = predict(test_loader, 
-                            model, 
-                            device=DEVICE)
-            
-            
-
-            chunk['preds'] = preds
-            
-            df_list.append(chunk)
-            i+=1
-        
-        # Concat Lists
-        print(f"\tWriting {temp_preds_path}")
-        merged_df = pd.concat(df_list, axis=0)
-        columns_to_keep = ['onset', 'offset','label', 'preds', 'bird']
-        merged_df = merged_df.drop(merged_df.columns.difference(columns_to_keep), axis=1)
-        merged_df.to_csv(temp_preds_path, sep=',', index=False)
 
 if __name__ == "__main__":
     main()
