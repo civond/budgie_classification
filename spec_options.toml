@@ -1,0 +1,17 @@
+# Spectrogram generation options
+
+[paths]
+piezo_audio_paths = ["data/Bl122.flac", 
+            "data/Li145.flac",
+            "data/Or61.flac",
+            "data/Ti81.flac"]
+
+label_paths = ["data/Bl122.txt",
+            "data/Li145.txt",
+            "data/Or61.txt",
+            "data/Ti81.txt"]
+
+img_write_dir = "spec/"
+csv_write_path = "data/meta.csv"
+
+[spec_options]
