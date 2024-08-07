@@ -13,11 +13,16 @@ with open(toml_file_path, 'r') as file:
 piezo_audio_paths = toml_data['paths']['piezo_audio_paths']
 label_paths = toml_data['paths']['label_paths']
 write_dir = toml_data['paths']['img_write_dir']
+edge_dir = toml_data['paths']['edge_write_dir']
 csv_write_path = toml_data['paths']['csv_write_path']
 
 # Main
 def main():
     df_list = []
+
+    # Generate directories if already dont exist.
+    make_directories(write_dir) # Images
+    make_directories(edge_dir) # edges
 
     for index, audio in enumerate(piezo_audio_paths):
         audio_name = audio.split('/')[1].split(".")[0]
@@ -31,11 +36,13 @@ def main():
         df.rename(columns={0: 'onset', 1: 'offset', 2: 'label'}, inplace=True)
         df['type'] = df['label'].apply(lambda x: 'voc' if x == 1 else 'noise')
         print(df)
+        print(df['label'].unique())
         df['onset_sample'] = (df['onset'] * fs).astype(int)
         df['offset_sample'] = (df['offset'] * fs).astype(int)
         df['length'] = df['offset_sample'] - df['onset_sample']
     
         df['path'] = df.apply(lambda row: os.path.join(write_dir, row['type'], f"{audio_name}_{row['onset_sample']}.jpg").replace('\\', '/'), axis=1)
+        df['edge_path'] = df.apply(lambda row: os.path.join(edge_dir, row['type'], f"{audio_name}_{row['onset_sample']}.jpg").replace('\\', '/'), axis=1)
         df['bird'] = str(audio_name)
 
         category_counts = df['label'].value_counts()
@@ -67,9 +74,12 @@ def main():
 
             stftMat_mel = generate_spectrogram(temp, fs) # Create Mel Spectrogram
             normalized_image1 = spec2dB(stftMat_mel) # Convert to dB and apply CLAHE
+            gray = cv2.cvtColor(normalized_image1, cv2.COLOR_BGR2GRAY) # Convert to grayscale
+            edges = cv2.Canny(gray, 190, 200) # Canny edge detection
 
-            print(f"\tWriting: {row['path']}, {normalized_image1.shape}")
+            print(f"\t({index}) Writing: {row['path']}, {normalized_image1.shape}")
             cv2.imwrite(row['path'], normalized_image1) # Write image
+            cv2.imwrite(row['edge_path'], edges) # Write image
 
     ls = []
 

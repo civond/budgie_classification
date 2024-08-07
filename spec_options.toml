@@ -6,12 +6,16 @@ piezo_audio_paths = ["data/Bl122.flac",
             "data/Or61.flac",
             "data/Ti81.flac"]
 
-label_paths = ["data/Bl122.txt",
+label_paths = ["data/Bl122_hand_dorian.txt",
             "data/Li145.txt",
             "data/Or61.txt",
             "data/Ti81.txt"]
 
+#piezo_audio_paths = ["data/audioCh3_short_filtered.flac"]
+#label_paths = ['data/audioCh3_short_filtered.txt']
+
+csv_write_path = "data/test_set.csv"
+edge_write_dir = "edge/"
 img_write_dir = "spec/"
-csv_write_path = "data/meta.csv"
 
 [spec_options]

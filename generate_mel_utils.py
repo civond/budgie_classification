@@ -5,6 +5,19 @@ import scipy.signal as signal
 import librosa as lr
 import scipy.signal as signal
 import cv2
+import os
+
+# Make Directories
+def make_directories(dir_name):
+    if os.path.exists(dir_name):
+        print(f"{dir_name} already exists.")
+    else:
+        print(f"Writing: {dir_name}.")
+        voc_dir = os.path.join(dir_name, "voc")
+        noise_dir = os.path.join(dir_name, "noise")
+        os.mkdir(dir_name)
+        os.mkdir(voc_dir)
+        os.mkdir(noise_dir)
 
 # Filter audio
 def load_filter_audio(path):

@@ -22,6 +22,8 @@ PIN_MEMORY = True
 
 LOAD_MODEL = False
 TRAIN = True
+PATIENCE = 5
+
 dataset_pth = "data/meta.csv"
 
 def main():
@@ -116,7 +118,6 @@ def main():
             val_acc_running.append(val_acc)
             val_loss_running.append(val_loss)
 
-
         # Get current timestamp
         now = datetime.now()
         timestamp = now.strftime("%Y_%m_%d_%H_%M_%S")
@@ -128,6 +129,6 @@ def main():
         }
         save_checkpoint(state = checkpoint, filename= f"checkpoints/{timestamp}.pth.tar")
         save_metrics(timestamp, train_loss_running, train_acc_running, val_loss_running, val_acc_running)
-
+        
 if __name__ == "__main__":
     main()

@@ -9,6 +9,7 @@ __pycache__/
 *.txt
 *.pth
 *.tar
+*.json
 
 # C extensions
 *.so

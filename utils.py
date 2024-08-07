@@ -133,11 +133,22 @@ def validate(loader, model, loss_fn, device="cuda"):
     print(f"Validation Avg_Acc: {avg_acc}, Avg_Loss: {avg_loss}")
     return avg_acc, avg_loss.item()
 
+
 def predict(loader, model, device="cuda"):
+    # Extract predictions and probs and accuracy
     preds_arr = []
     probs_arr = []
     labels_arr = []
     total_acc = 0
+
+    # Extract activations
+    activation = {}
+    activation_arr = []
+
+    def get_activation(name):
+        def hook(model, input, output):
+            activation[name] = output.detach().cpu().numpy()
+        return hook
 
     loop = tqdm.tqdm(loader)
     model.eval()
@@ -147,6 +158,7 @@ def predict(loader, model, device="cuda"):
         for batch_idx, (data, labels) in enumerate(loop):
             data = data.to(device)
             labels = labels.float().unsqueeze(1).to(device)
+            model.avgpool.register_forward_hook(get_activation(batch_idx))
 
             predictions = model(data)
 
@@ -161,7 +173,20 @@ def predict(loader, model, device="cuda"):
             probs_arr.append(probs.cpu().numpy())
             preds_arr.append(preds.cpu().numpy())
             labels_arr.append(labels.cpu().numpy())
+            #print(activation)
+            #print(len(activation))
+            #print(len(activation[batch_idx]))
+            #print(activation[batch_idx].shape)
 
+            for array in activation[batch_idx]:
+                activation_arr.append(array)
+                print(array)
+                print(array.dtype)
+                input('pause)')
+            #print(activation_arr)
+            #print(len(activation_arr))
+
+            
     avg_acc = total_acc / batch_length
     print(avg_acc)
 
@@ -171,4 +196,4 @@ def predict(loader, model, device="cuda"):
     labels_arr = np.concatenate(labels_arr)
     probs_arr = np.concatenate(probs_arr)
 
-    return preds_arr, labels_arr, probs_arr
+    return preds_arr, labels_arr, probs_arr, activation_arr
